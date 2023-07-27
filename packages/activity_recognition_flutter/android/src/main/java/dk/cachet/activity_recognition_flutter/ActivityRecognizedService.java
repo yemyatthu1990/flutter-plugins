@@ -33,34 +33,36 @@ public class ActivityRecognizedService extends JobIntentService {
     // remove override and make onHandleIntent private.
     private void onHandleIntent(@Nullable Intent intent) {
         ActivityRecognitionResult result = ActivityRecognitionResult.extractResult(intent);
-        List<DetectedActivity> activities = result.getProbableActivities();
+        if (result != null) {
+            List<DetectedActivity> activities = result.getProbableActivities();
 
-        DetectedActivity mostLikely = activities.get(0);
+            DetectedActivity mostLikely = activities.get(0);
 
-        for (DetectedActivity a : activities) {
-            if (a.getConfidence() > mostLikely.getConfidence()) {
-                mostLikely = a;
+            for (DetectedActivity a : activities) {
+                if (a.getConfidence() > mostLikely.getConfidence()) {
+                    mostLikely = a;
+                }
             }
+
+            String type = getActivityString(mostLikely.getType());
+            int confidence = mostLikely.getConfidence();
+
+            String data = type + "," + confidence;
+
+            Log.d("onHandleIntent", data);
+
+            // Same preferences as in ActivityRecognitionFlutterPlugin.java
+            SharedPreferences preferences =
+                    getApplicationContext().getSharedPreferences(
+                            ActivityRecognitionFlutterPlugin.ACTIVITY_RECOGNITION, MODE_PRIVATE);
+
+            preferences.edit().clear()
+                    .putString(
+                            ActivityRecognitionFlutterPlugin.DETECTED_ACTIVITY,
+                            data
+                    )
+                    .apply();
         }
-
-        String type = getActivityString(mostLikely.getType());
-        int confidence = mostLikely.getConfidence();
-
-        String data = type + "," + confidence;
-
-        Log.d("onHandleIntent", data);
-
-        // Same preferences as in ActivityRecognitionFlutterPlugin.java
-        SharedPreferences preferences =
-                getApplicationContext().getSharedPreferences(
-                        ActivityRecognitionFlutterPlugin.ACTIVITY_RECOGNITION, MODE_PRIVATE);
-
-        preferences.edit().clear()
-                .putString(
-                        ActivityRecognitionFlutterPlugin.DETECTED_ACTIVITY,
-                        data
-                )
-                .apply();
     }
 
     public static String getActivityString(int type) {
